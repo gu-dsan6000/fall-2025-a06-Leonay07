@@ -21,14 +21,13 @@ Log Level Breakdown:
 | ERROR | 11,259 | 0.04% |
 | WARN | 9,595 | 0.04% |
 
-Interpretation:
-
-The overwhelming majority of logs are INFO-level, indicating healthy routine operations. Only 0.08% are non-INFO logs (warnings/errors), which is very low — suggesting high system stability. However, due to the massive volume (~33M lines), even 0.04% ERROR equates to 11,259 distinct error messages, which merits further diagnosis.
+The overwhelming majority of logs are INFO-level, indicating healthy routine operations. Only 0.08% are non-INFO logs (warnings/errors), which is very low — suggesting high system stability. However, due to the massive volume (~33M lines), even 0.04% ERROR equates to 11,259 distinct error messages, which need further diagnosis.
 
 
 ### Performance Analysis
-Figure 1. Spark Web UI Overview
 ![Density_plot](./webui.png)
+
+Figure 1. Spark Web UI Overview
 
 | Metric | Observation |
 |---------|--------------|
@@ -63,15 +62,17 @@ This problem focuses on analyzing distributed Spark cluster usage logs to identi
 
 Cluster 1485248649253 dominated execution, running 180 out of 193 total applications (~93%). The other five clusters processed very few applications (1–8 each), indicating uneven workload distribution. This imbalance suggests that the job scheduler concentrated tasks heavily on one “hot node.”
 
-Figure 2. Number of Applications per Cluster
 ![Bar chart](./data/output/problem2_bar_chart.png)
+
+Figure 2. Number of Applications per Cluster
+
 (Bar chart clearly highlights one dominant cluster)
 
-Figure 3. Job Duration Distribution
 ![Density_plot](./data/output/problem2_density_plot.png)
 
-Interpretation:
-From the histogram below, most job durations fall within 10³–10⁴ seconds (≈16 min to 3 hrs),but with sporadic long-tail jobs, implying heterogeneous workloads.
+Figure 3. Job Duration Distribution
+
+From the histogram below, most job durations fall within 10³–10⁴ seconds (≈16 min to 3 hrs), but with some long-tail jobs, implying heterogeneous workloads.
 
 ### Performance Analysis
 Execution Overview
@@ -82,8 +83,9 @@ From the Spark Web UI:
 
 6 total cores, 19.9 GiB total memory
 
-Figure 4. Spark Web UI Overview
 ![Density_plot](./webui.png)
+
+Figure 4. Spark Web UI Overview
 
 (Three active workers successfully running in parallel)
 
@@ -105,9 +107,6 @@ This validates the benefit of using Spark’s cluster mode even on moderately si
 
 ## Conclusion
 
-The cluster analysis successfully identified a highly uneven task distribution,
-demonstrated the benefits of distributed Spark execution, and produced clear, professional documentation
-with reproducible code and visualization.
+The cluster analysis identified a highly uneven task distribution, demonstrated the benefits of distributed Spark execution, and produced clear visualization.
 
-Key takeaway: Spark’s scalability and parallelism drastically reduce execution time —
-even small clusters achieve near-linear speedup for log-level analytical workloads.
+Spark’s scalability and parallelism extremely reduce execution time — even small clusters achieve near-linear speedup for log-level analytical workloads.
