@@ -7,17 +7,19 @@ This problem analyzes large-scale Spark application logs to quantify the distrib
 
 ### Key Findings & Insights
 
-Metric	Value:
-Total log lines processed	33,236,604
-Lines with valid log levels	27,410,336
-Lines without log levels	5,826,268
-Unique log levels found	3
+| Metric | Value |
+|--------|--------|
+| Total log lines processed | 33,236,604 |
+| Lines with valid log levels | 27,410,336 |
+| Lines without log levels | 5,826,268 |
+| Unique log levels found | 3 |
 
 Log Level Breakdown:
-Log Level	Count	Percentage
-INFO	27,389,482	99.92%
-ERROR	11,259	0.04%
-WARN	9,595	0.04%
+| Log Level | Count | Percentage |
+|------------|--------|------------|
+| INFO | 27,389,482 | 99.92% |
+| ERROR | 11,259 | 0.04% |
+| WARN | 9,595 | 0.04% |
 
 Interpretation:
 
@@ -25,16 +27,16 @@ The overwhelming majority of logs are INFO-level, indicating healthy routine ope
 
 
 ### Performance Analysis
-Figure 3. Spark Web UI Overview
+Figure 1. Spark Web UI Overview
 ![Density_plot](./webui.png)
 
-Metric	Observation
-Execution Time (Cluster)	~5.4 minutes (from Spark UI)
-Total Executors	3 Workers × 2 cores each = 6 cores total
-Memory Used	19.9 GiB total (3.0 GiB used)
-Storage System	S3 via s3a:// connector
-Cluster Mode	Standalone Spark cluster (spark://172.31.83.214:7077)
-
+| Metric | Observation |
+|---------|--------------|
+| Execution Time (Cluster) | ~5.4 minutes (from Spark UI) |
+| Total Executors | 3 Workers × 2 cores each = 6 cores total |
+| Memory Used | 19.9 GiB total (3.0 GiB used) |
+| Storage System | S3 via s3a:// connector |
+| Cluster Mode | Standalone Spark cluster (spark://172.31.83.214:7077) |
 
 ### Optimization Techniques Used
 Parallel I/O through Spark’s distributed text reader.
@@ -53,18 +55,19 @@ This problem focuses on analyzing distributed Spark cluster usage logs to identi
 
 
 ### Key Findings & Insights
-Metric	Value
-Total Unique Clusters	6
-Total Applications	193
-Average per Cluster	32.17 apps/cluster
+| Metric | Value |
+|---------|--------|
+| Total Unique Clusters | 6 |
+| Total Applications | 193 |
+| Average per Cluster | 32.17 apps/cluster |
 
 Cluster 1485248649253 dominated execution, running 180 out of 193 total applications (~93%). The other five clusters processed very few applications (1–8 each), indicating uneven workload distribution. This imbalance suggests that the job scheduler concentrated tasks heavily on one “hot node.”
 
-Figure 1. Number of Applications per Cluster
+Figure 2. Number of Applications per Cluster
 ![Bar chart](./data/output/problem2_bar_chart.png)
 (Bar chart clearly highlights one dominant cluster)
 
-Figure 2. Job Duration Distribution
+Figure 3. Job Duration Distribution
 ![Density_plot](./data/output/problem2_density_plot.png)
 
 Interpretation:
@@ -79,9 +82,7 @@ From the Spark Web UI:
 
 6 total cores, 19.9 GiB total memory
 
-Cluster job completed in ~35 seconds, while local execution took ≈2–3 minutes.
-
-Figure 3. Spark Web UI Overview
+Figure 4. Spark Web UI Overview
 ![Density_plot](./webui.png)
 
 (Three active workers successfully running in parallel)
@@ -93,10 +94,11 @@ Figure 3. Spark Web UI Overview
 Pre-filtered invalid rows before group aggregation to minimize shuffle size.
 
 ### Comparison of local vs cluster performance
-Local vs Cluster Performance Comparison
-Environment	Total Runtime	Resource Utilization	I/O Characteristics	Speedup
-Local	~2.5 minutes	Single-core CPU	High local I/O	Baseline
-Cluster (3 Workers)	~35 seconds	6 cores (parallel)	Distributed I/O	≈4× faster
+Local vs Cluster Performance Comparison (On sample dataset)
+| Environment | Total Runtime | Resource Utilization | I/O Characteristics | Speedup |
+|--------------|----------------|------------------------|----------------------|----------|
+| Local | ~2.5 minutes | Single-core CPU | High local I/O | Baseline |
+| Cluster (3 Workers) | ~35 seconds | 6 cores (parallel) | Distributed I/O | ≈4× faster |
 
 Cluster execution demonstrates significant performance improvement through task parallelization and distributed I/O.
 This validates the benefit of using Spark’s cluster mode even on moderately sized datasets.
