@@ -1,9 +1,9 @@
-Total log lines processed: 1911
-Total lines with log levels: 1601
-Lines without log levels: 310
+Total log lines processed: 33236604
+Total lines with log levels: 27410336
+Lines without log levels: 5826268
 Unique log levels found: 3
 
 Log level distribution:
-  INFO  :      1,573 ( 98.25%)
-  ERROR :         14 (  0.87%)
-  WARN  :         14 (  0.87%)
+  INFO  : 27,389,482 ( 99.92%)
+  ERROR :     11,259 (  0.04%)
+  WARN  :      9,595 (  0.04%)

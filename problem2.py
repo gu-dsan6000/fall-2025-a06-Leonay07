@@ -15,7 +15,7 @@ matplotlib.use("Agg")
 # Problem 2: Cluster Usage Analysis (Cluster Version)
 # ==========================================
 
-# ---------- 参数解析 ----------
+# Preprocessing
 if len(sys.argv) < 2:
     print("Usage: uv run python problem2_cluster.py spark://<MASTER_PRIVATE_IP>:7077 [--skip-spark]")
     sys.exit(1)
@@ -23,17 +23,14 @@ if len(sys.argv) < 2:
 spark_master = sys.argv[1]
 skip_spark = "--skip-spark" in sys.argv
 
-# ---------- 输出路径 ----------
 output_base = "/home/ubuntu/data/output/problem2"
 os.makedirs(output_base, exist_ok=True)
 
-# ---------- 如果跳过 Spark，直接加载 CSV 绘图 ----------
 if skip_spark:
     print("Skipping Spark processing, regenerating visualizations...")
     apps_pd = pd.read_csv(f"{output_base}/problem2_timeline.csv")
     summary_pd = pd.read_csv(f"{output_base}/problem2_cluster_summary.csv")
 else:
-    # ---------- 创建 Spark Session ----------
     spark = (
         SparkSession.builder
         .appName("Problem2_ClusterUsage_Cluster")
@@ -45,15 +42,14 @@ else:
     if not bucket:
         raise ValueError("SPARK_LOGS_BUCKET environment variable not set!")
 
-    # ---------- 读取数据 ----------
+    # Read data
     input_path = f"{bucket}/data/application_*/*.log"
     print(f"Loading logs from: {input_path}")
     logs_df = spark.read.text(input_path)
 
-    # ---------- 正则提取 ----------
+    # Regex process
     pattern = r"application_(\d+)_(\d+)"
     time_pattern = r"(\d{2}/\d{2}/\d{2} \d{2}:\d{2}:\d{2})"
-
 
     parsed_df = logs_df.select(
         regexp_extract("value", pattern, 1).alias("cluster_id"),
@@ -62,7 +58,7 @@ else:
         col("value").alias("log_line")
     ).filter(col("cluster_id") != "")
 
-    # ---------- 每个 application 的起止时间 ----------
+    # Start time
     apps_df = (
         parsed_df.groupBy("cluster_id", "app_number")
         .agg(
@@ -75,7 +71,7 @@ else:
         )
     )
 
-    # ---------- 每个 cluster 的汇总 ----------
+    # Cluster summary
     cluster_summary = (
         apps_df.groupBy("cluster_id")
         .agg(
@@ -85,7 +81,7 @@ else:
         )
     )
 
-    # ---------- 总体统计 ----------
+    # Summary
     total_clusters = cluster_summary.count()
     total_apps = apps_df.count()
     avg_per_cluster = total_apps / total_clusters if total_clusters > 0 else 0
@@ -96,7 +92,7 @@ else:
         f"Average applications per cluster: {avg_per_cluster:.2f}",
     ]
 
-    # ---------- Top clusters ----------
+    # Top clusters
     top_clusters = (
         cluster_summary
         .orderBy(col("num_applications").desc())
@@ -107,26 +103,26 @@ else:
     for row in top_clusters:
         summary_text.append(f"  Cluster {row['cluster_id']}: {row['num_applications']} applications")
 
-    # ---------- 输出到文件 ----------
+    # save to file
     print("\n".join(summary_text))
     apps_df.coalesce(1).write.csv(f"{output_base}/problem2_timeline", header=True, mode="overwrite")
     cluster_summary.coalesce(1).write.csv(f"{output_base}/problem2_cluster_summary", header=True, mode="overwrite")
 
-    # ✅ 等待 Spark 写入完成并确保文件存在
+    # Wait for save
     import time, glob, shutil
 
     def wait_for_file(path_pattern, retries=10, delay=2):
-        """等待文件生成"""
+        """Wait for save"""
         for _ in range(retries):
             matches = glob.glob(path_pattern)
             if matches:
-                print(f"✅ Found file: {matches[0]}")
+                print(f"Found file: {matches[0]}")
                 return matches[0]
-            print(f"⏳ Waiting for {path_pattern} to appear...")
+            print(f"Waiting for {path_pattern} to appear...")
             time.sleep(delay)
-        raise FileNotFoundError(f"❌ File not found after {retries * delay} seconds: {path_pattern}")
+        raise FileNotFoundError(f"File not found after {retries * delay} seconds: {path_pattern}")
 
-    print("⏳ Ensuring Spark has finished committing output files...")
+    print("Ensuring Spark has finished committing output files...")
 
     timeline_dir = f"{output_base}/problem2_timeline"
     summary_dir = f"{output_base}/problem2_cluster_summary"
@@ -134,29 +130,27 @@ else:
     timeline_part = wait_for_file(f"{timeline_dir}/part-*.csv")
     summary_part = wait_for_file(f"{summary_dir}/part-*.csv")
 
-    # ✅ 复制成固定名字的 CSV（保证存在）
+    # Save file
     final_timeline_csv = f"{output_base}/problem2_timeline.csv"
     final_summary_csv = f"{output_base}/problem2_cluster_summary.csv"
 
     shutil.copy(timeline_part, final_timeline_csv)
     shutil.copy(summary_part, final_summary_csv)
 
-    print(f"✅ CSV files saved:")
+    print(f"CSV files saved:")
     print(f"   - {final_timeline_csv}")
     print(f"   - {final_summary_csv}")
 
-    # ---------- 转 Pandas 方便画图 ----------
+    # Convert to pandas
     apps_pd = apps_df.toPandas()
     summary_pd = cluster_summary.toPandas()
 
     spark.stop()
 
-# ==========================================
-# 📊 Visualization Section
-# ==========================================
+# Visualization Section
 print("\nGenerating visualizations...")
 
-# ---- 1️⃣ Bar chart ----
+# Bar chart
 plt.figure(figsize=(8, 5))
 sns.barplot(data=summary_pd, x="cluster_id", y="num_applications", palette="viridis")
 plt.title("Number of Applications per Cluster")
@@ -168,7 +162,7 @@ plt.tight_layout()
 plt.savefig(f"{output_base}/problem2_bar_chart.png")
 plt.close()
 
-# ---- 2️⃣ Density plot ----
+# Density plot
 if not apps_pd.empty:
     apps_pd["start_time"] = pd.to_datetime(apps_pd["start_time"], errors='coerce')
     apps_pd["end_time"] = pd.to_datetime(apps_pd["end_time"], errors='coerce')
@@ -186,5 +180,5 @@ if not apps_pd.empty:
     plt.savefig(f"{output_base}/problem2_density_plot.png")
     plt.close()
 
-print("✅ Problem 2 (Cluster) completed successfully!")
+print("Problem 2 (Cluster) completed successfully!")
 print(f"Outputs saved in: {output_base}/")
